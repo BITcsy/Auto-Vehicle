@@ -1,4 +1,4 @@
-from data_struct import PathPoint
+from data_struct import Pose, PathPoint
 
 class BasicCross:
     def __init__(self, a_begin, a_end, b_begin, b_end, num):
@@ -10,7 +10,13 @@ class BasicCross:
         self.reso_A = (a_end - a_begin) / num
         self.reso_B = (b_end - b_begin) / num
         self.carA_path = []
+        self.carA_path_width = 4.0
+        self.carB_path_width = 4.0
         self.carB_path = []
+        self.carA_path_left_bound = []
+        self.carA_path_right_bound = []
+        self.carB_path_left_bound = []
+        self.carB_path_left_bound = []
         for i in range(self.num):
             pt_A = PathPoint()
             pt_B = PathPoint()
@@ -20,6 +26,9 @@ class BasicCross:
             self.carB_path.append(pt_B)
 
     def GetRefPaths(self):
+        return (self.carA_path, self.carB_path)
+
+    def GetRefPathsPlot(self):
         refA_pts_x = []
         refA_pts_y = []
         refB_pts_x = []
