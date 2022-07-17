@@ -95,12 +95,12 @@ def run_simulation(robots):
                              instance.pose_current.y,
                              instance.pose_current.theta,
                              instance.x_traj,
-                             instance.y_traj, instance.color)
-
+                             instance.y_traj, instance.color, instance.x_pos_list, instance.y_pos_list)
+                print("name = %s, color = %c" % (instance.name, instance.color))
             plt.pause(TIME_STEP)
 
 
-def plot_vehicle(x, y, theta, x_traj, y_traj, color):
+def plot_vehicle(x, y, theta, x_traj, y_traj, color, x_pos, y_pos):
     # Corners of triangular vehicle when pointing to the right (0 radians)
     p1_i = np.array([0.5, 0, 1]).T
     p2_i = np.array([-0.5, 0.25, 1]).T
@@ -114,8 +114,8 @@ def plot_vehicle(x, y, theta, x_traj, y_traj, color):
     plt.plot([p1[0], p2[0]], [p1[1], p2[1]], color+'-')
     plt.plot([p2[0], p3[0]], [p2[1], p3[1]], color+'-')
     plt.plot([p3[0], p1[0]], [p3[1], p1[1]], color+'-')
-
-    plt.plot(x_traj, y_traj, color+'--')
+    plt.plot(x_traj, y_traj, color+'-')
+    plt.plot(x_pos, y_pos, 'b--')
 
 
 def transformation_matrix(x, y, theta):
@@ -129,7 +129,7 @@ def transformation_matrix(x, y, theta):
 def main():
     pathA, pathB = GenerateRefPath(-10.0, 10.0, -15.0, 15.0, 100)
     pose_target_ego = Pose(10.0, 0.0, 0)
-    pose_start_ego = Pose(-10.0, 0.0, 0)
+    pose_start_ego = Pose(-10.0, 2.0, 0)
     pose_target_obj1 = Pose(0.0, 15.0, np.pi / 2.0)
     pose_start_obj1 = Pose(0.0, -15.0, np.pi / 2.0)
 
