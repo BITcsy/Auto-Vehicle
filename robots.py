@@ -4,12 +4,15 @@ from data_struct import PathPoint
 from basic_fun import Transform
 import copy
 
-AT_TARGET_ACCEPTANCE_THRESHOLD = 2.0
+AT_TARGET_ACCEPTANCE_THRESHOLD = 1.0
 SPD_PROFILE_DT = 0.1
 SPEED_LIMIT = 10.0
 ACC_LIMIT = 5.0
 DCC_LIMIT = -5.0
+MAX_ANGLE_ACC = 1.0
 MAX_VAL = 1E6
+MAX_SUM = 10.0
+MAX_D_ERR = 10.0
 
 class Robot:
     def __init__(self, name, color, max_linear_speed, max_angular_speed, pose_start, pose_target, ref_path):
@@ -20,8 +23,10 @@ class Robot:
         self.ref_path = ref_path
         self.pose_target = pose_target
         self.pose_start = copy.copy(pose_start)
-        self.x_traj = []
+        self.x_traj = [] # path plan
         self.y_traj = []
+        self.x_pos_list = [] # pos after control
+        self.y_pos_list = []
         # current status
         self.pose_current = copy.copy(pose_start)
         self.vec = 0.0 # current velocity
@@ -31,7 +36,11 @@ class Robot:
         # used in motion plan
         self.max_to_stop_time = SPEED_LIMIT / math.fabs(DCC_LIMIT)  # the time it takes from max speed to stop
         # used in control
-        self.lateral_kp = 0.1
+        self.lateral_kp = 0.2
+        self.lateral_ki = 0.01
+        self.lateral_kd = 50.0
+        self.error_sum = 0.0  # for ki
+        self.last_error = 0.0 # for kd
         self.vec_kp = 0.5
         self.vec_target_ratio = 0.5
 
@@ -63,7 +72,23 @@ class Robot:
                                                                       pose_current.y, pose_current.theta)
                 break
         # delay in vehicle model is not considered
-        angle_vec = self.lateral_kp * point_match.y
+        self.error_sum += point_match.y
+        print("err = %lf, err_sum = %lf" % (point_match.y, self.error_sum))
+        self.error_sum = max(-MAX_SUM, min(MAX_SUM, self.error_sum))
+        if (self.last_error * point_match.y <= 0.0):  # when cross 0, sum should decrease
+            self.error_sum = 0.0
+
+        d_error = point_match.y - self.last_error
+        d_error = max(-MAX_D_ERR, min(MAX_D_ERR, d_error))
+        self.last_error = point_match.y
+
+        angle_vec = self.lateral_kp * point_match.y + self.lateral_ki * self.error_sum + self.lateral_kd * d_error
+        angle_vec = max(-MAX_ANGLE_ACC, min(MAX_ANGLE_ACC, angle_vec))
+
+        print("name = %s, error = %lf, error_sum = %lf, d_error = %lf" % \
+            (self.name, point_match.y, self.error_sum, d_error))
+        print("p action = %lf, i action = %lf, d action = %lf" % (self.lateral_kp * point_match.y, \
+            self.lateral_ki * self.error_sum, self.lateral_kd * d_error))
 
         if bool(speed_profile): #not empty
             index = int(self.foresee_time / SPD_PROFILE_DT)
@@ -136,3 +161,5 @@ class Robot:
         self.pose_current.theta = self.pose_current.theta + angle_vec * dt
         self.pose_current.x = self.pose_current.x + vec * np.cos(self.pose_current.theta) * dt
         self.pose_current.y = self.pose_current.y + vec * np.sin(self.pose_current.theta) * dt
+        self.x_pos_list.append(self.pose_current.x)
+        self.y_pos_list.append(self.pose_current.y)
